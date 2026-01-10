@@ -1,7 +1,7 @@
 name = "SimpleEvolve"
 uuid = "6d5e804b-4f14-450a-9571-280c5529278f"
-authors = ["Nick and Arnab"]
 version = "1.0.0-DEV"
+authors = ["Nick and Arnab"]
 
 [deps]
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
@@ -39,7 +39,7 @@ JLD2 = "0.5.13, 0.6"
 LineSearches = "7.3.0"
 LinearAlgebra = "1.11.0"
 NPZ = "0.4.3"
-Optim = "1.12.0"
+Optim = "1.12.0, 2"
 Plots = "1.40.11"
 Polynomials = "4.0.19"
 Random = "1.11.0"
