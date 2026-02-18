@@ -60,20 +60,21 @@ using Interpolations
     B = 0.4
     seed= 12
     Random.seed!(seed)
+    N= Int(floor(T * fs))
     δt = T / N
     W = B / fs
     K = Int(round((2 * N * W) - 3))
     println("Using K = $K Slepian basis functions for N = $N, W = $W")
     n_samples = N
     nw = N * W
-    if nw >= (N + 1) / 2
-        println("SKIPPING: nw = $nw must be less than (N+1)/2 = $((N+1)/2)")
-        continue
-    end
-    if K<1
-        println("there is available slepian function that has eigenvalue > 0.99")
-        continue
-    end
+    # if nw >= (N + 1) / 2
+    #     println("SKIPPING: nw = $nw must be less than (N+1)/2 = $((N+1)/2)")
+    #     continue
+    # end
+    # if K<1
+    #     println("there is available slepian function that has eigenvalue > 0.99")
+    #     continue
+    # end
 
     dpss_basis = dpss(N + 1, N * W, K)
     eigenvalues = dpsseig(dpss_basis, N * W)
@@ -234,7 +235,12 @@ using Interpolations
     println("Final energy: ", final_energy)
     println("Final gradient norm: ", norm(final_gradient))
     println("Final gap to actual: ", final_energy - real(E_actual))
-
-    @test final_energy < energy_hf "Final energy ($final_energy) should be less than Hartree-Fock energy ($energy_hf)"
-    @test abs(final_energy - real(E_actual)) < 1e-5 "Final energy should be close to actual ground state energy (gap = $(final_energy - real(E_actual)))"
+    @testset "Energy checks" begin
+    @info "Final energy ($final_energy) should be less than Hartree–Fock energy ($energy_hf)"
+    @test final_energy < energy_hf
+    
+    @info "Final energy should be close to actual ground state energy (gap = $(final_energy - real(E_actual)))"
+    @test abs(final_energy - real(E_actual)) < 1e-5
+    end
+    
 end
