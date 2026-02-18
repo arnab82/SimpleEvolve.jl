@@ -53,9 +53,9 @@ function penalty_gradient(Ω, Ω₀::Float64)
     return grad
 end
 
-#=
+"""
 We can use this function in the script directly for gradient with penalty with real pulse only
-=#
+"""
 
 function gradient_ode_opt!(Grad, samples; λ=1.0, Ω₀=1.0+(2π*0.02))
     Grad = reshape(Grad, :, n_qubits)

@@ -101,9 +101,25 @@ function gradientsignal_ODE(ψ0::Vector{ComplexF64},
     
     return ∂Ω_real, ∂Ω_imag, ψ, σ  
 end
-#
-# same function as gradientsignal_ODE but it tackles only real amplitudes signal
-#
+"""
+gradientsignal_ODE_real(ψ0, T, signals, n_sites, drives, eigvalues, device_action_independent_t, cost_ham, n_signals, ∂Ω=Matrix{Float64}(undef,n_signals+1,n_sites); tol_ode=1e-8)
+    Function to compute the gradient of the energy 
+    with respect to the real amplitude of the signal using ODE
+    args:
+        ψ0        : Initial state vector
+        T         : Total time for evolution
+        signals   : Signals to be evolved
+        n_sites   : Number of sites in the system
+        drives    : External drives applied to the system
+        eigvalues : Eigenvalues of the Hamiltonian
+        device_action_independent_t: Device action independent time evolution
+        cost_ham  : Cost Hamiltonian
+        n_signals : Number of signals
+        ∂Ω       : Gradient matrix (default is uninitialized)
+        tol_ode   : Tolerance for ODE solver (default is 1e-8)
+    returns:
+        ∂Ω       : Gradient matrix
+"""
 
 function gradientsignal_ODE_real(ψ0::Vector{ComplexF64},
                             T::Float64,
@@ -392,9 +408,25 @@ function gradient_eachtimestep_real!(∂Ω,
     end 
     
 end
-#
-# same function as gradientsignal_ODE but with trotter step 
-#
+"""
+gradientsignal_rotate(ψ0, T, signals, n_sites, drives, eigvalues, device_action_independent_t, cost_ham, n_signals, ∂Ω=Matrix{Float64}(undef,n_signals+1,n_sites), n_trotter_steps=1000)
+    Function to compute the gradient of the energy 
+    with respect to the amplitude of the signal using trotter step
+    args:
+        ψ0       : Initial state vector
+        T        : Total time for evolution
+        signals   : Signals to be evolved
+        n_sites   : Number of sites in the system
+        drives    : External drives applied to the system
+        eigvalues : Eigenvalues of the Hamiltonian
+        device_action_independent_t: Device action independent time evolution
+        cost_ham  : Cost Hamiltonian
+        n_signals : Number of signals
+        ∂Ω       : Gradient matrix (default is uninitialized)
+        n_trotter_steps: Number of Trotter steps for exponentiation (default is 1000)
+    returns:
+        ∂Ω       : Gradient matrix
+"""
 function gradientsignal_rotate(ψ0::Vector{ComplexF64},
                             T::Float64,
                             signals,
@@ -508,8 +540,26 @@ function gradientsignal_rotate(ψ0::Vector{ComplexF64},
     end
     return ∂Ω,ψ,σ
 end
+"""
+gradient_eachstep(∂Ω, i, σ, ψ, t, τ, multi_signal, n_sites, drives, eigvalues)
+    Function to compute the gradient of the energy 
+    with respect to the amplitude of the signal at each time step using trotter step
+    args:
+        ∂Ω                : Gradient matrix
+        i                 : Index of the current time step
+        σ                 : Evolved state vector
+        ψ                 : Evolved state vector
+        t                 : Current time
+        τ                 : Time factor for exponentiation on device_action_independent_t
+         to get the interaction Hamiltonian at time t
+        multi_signal      : Multi-channel signal
+        n_sites           : Number of sites in the system
+        drives            : External drives applied to the system
+        eigvalues         : Eigenvalues of the Hamiltonian
+    returns:
+        ∂Ω               : Updated gradient matrix at the current time step
 
-# computes gradient at each trotter step
+"""
 
 function gradient_eachstep!(∂Ω,
                             i::Int64,
@@ -572,8 +622,27 @@ function single_step(ψ::Vector{ComplexF64},
     return mul!(tmpV, O, ψ)
 end
 
-# computes gradient signal using finite difference (central difference formula)
+"""
+gradientsignal_finite_difference(ψ0, T, signals, n_sites, drives, eigvalues, cost_ham, n_signals, ∂Ω=Matrix{Float64}(undef,n_signals+1,n_sites); basis = "eigenbasis", ϵ = 1e-6)
+    Function to compute the gradient of the energy 
+    with respect to the amplitude of the signal using finite difference
+    args:
+        ψ0       : Initial state vector
+        T        : Total time for evolution
+        signals   : Signals to be evolved
+        n_sites   : Number of sites in the system
+        drives    : External drives applied to the system
+        eigvalues : Eigenvalues of the Hamiltonian
+        cost_ham  : Cost Hamiltonian
+        n_signals : Number of signals
+        ∂Ω       : Gradient matrix (default is uninitialized)
+        basis     : Basis in which to compute the gradient (default is "eigenbasis")
+        ϵ         : Perturbation size for finite difference (default is 1e-6)
+    returns:
+        ∂Ω       : Gradient matrix
 
+
+"""
 function gradientsignal_finite_difference(ψ0::Vector{ComplexF64},
                             T::Float64,
                             signals,
@@ -627,8 +696,9 @@ function gradientsignal_finite_difference(ψ0::Vector{ComplexF64},
     return ∂Ω
 end
 
-# computes gradient signal using finite difference (forward difference formula)
-
+"""
+computes gradient signal using finite difference (forward difference formula)
+"""
 function gradientsignal_fd(ψ0::Vector{ComplexF64},
                         T::Float64,
                         signals,
@@ -694,7 +764,30 @@ function Base.copy(ds::DigitizedSignal{T}) where T
 end
 
 
+"""
+gradientsignal_ODE_real_multiple_states(Ψ0, T, signals, n_sites, drives, eigvalues, cost_ham, n_signals, ∂Ω=Array{Float64}(undef, n_signals+1, n_sites); basis = "eigenbasis", tol_ode=1e-8, τ = T/n_signals)
+    Function to compute the gradient of the energy 
+    with respect to the real amplitude of the signal at each time step using ODE evolution for multiple states
+    args:
+        Ψ0       : Initial state matrix (each column is a state vector)
+        T        : Total time for evolution
+        signals   : Signals to be evolved
+        n_sites   : Number of sites in the system
+        drives    : External drives applied to the system
+        eigvalues : Eigenvalues of the Hamiltonian
+        cost_ham  : Cost Hamiltonian
+        n_signals : Number of signals
+        ∂Ω       : Gradient tensor (default is uninitialized)
+        basis     : Basis in which to compute the gradient (default is "eigenbasis")
+        tol_ode   : Tolerance for ODE solver (default is 1e-8)
+        τ         : Time factor for exponentiation on device_action_independent_t
+         to get the interaction Hamiltonian at time t (default is T/n_signals)
+    returns:
+        ∂Ω       : Gradient tensor
+        Ψ       : Final evolved state matrix
+        Σ       : Final evolved state matrix after applying cost Hamiltonian and reverse evolution
 
+"""
 
 
 function gradientsignal_ODE_real_multiple_states(
@@ -936,6 +1029,9 @@ function gradient_eachtimestep_real_multiple_states!(∂Ω,
         end
     end
 end
+"""
+This function computes gradient for multiple states in eigenbasis for complex pulse at each time step for both real and imaginary parts of the pulse
+"""
 
 
 function gradient_eachtimestep_multiple_states!(∂Ω_real, 

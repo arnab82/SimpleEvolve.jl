@@ -226,6 +226,40 @@ function costfunction_ode_with_penalty(ψ0::Vector{ComplexF64},
 
     return fidelity_cost + λ * penalty, ψ_ode
 end
+"""
+costfunction_ode_with_penalty_real(ψ0::Vector{ComplexF64},
+                         eigvals::Vector{Float64},
+                         signal, 
+                         n_sites::Int, 
+                         drives,
+                         eigvectors::Matrix{ComplexF64}, 
+                         T::Float64, 
+                         Cost_ham;
+                         basis = "eigenbasis",
+                         tol_ode=1e-8,
+                         λ::Float64=1.0,
+                         Ω₀::Float64=2π*0.02) 
+
+    Computes the cost function with a penalty term for the real part of control amplitudes.
+    for ground state
+    Args:
+        ψ0         : Initial state vector
+        eigvals    : Eigenvalues of the Hamiltonian
+        signal     : Control signal
+        n_sites    : Number of sites
+        drives     : Drives applied to the system
+        eigvectors : Eigenvectors of the Hamiltonian
+        T          : Total time for evolution
+        Cost_ham   : Hamiltonian for cost function
+        basis      : Basis for the computation (default: "eigenbasis")
+        tol_ode    : Tolerance for ODE solver (default: 1e-8)
+        λ          : Penalty weight (default: 0.1)
+        Ω₀         : Reference amplitude (default: 1.0 + 2π + 0.02)
+    Returns:
+        cost      : Computed cost function value with penalty
+        ψ_ode      : Evolved state vector   
+"""
+
 function costfunction_ode_with_penalty_real(ψ0::Vector{ComplexF64},
                          eigvals::Vector{Float64},
                          signal, 
@@ -369,8 +403,11 @@ function costfunction_ssvqe_with_penalty_real(
 
     return cost + λ * penalty, Ψ_ode, energies
 end
+"""
+costfunction analysis for the optimized pulse, to check the frequency components before and after lowpass filtering
+    
 
-# analysis cost function of frequency bandwidth for excited states
+"""
 
 function costfunction_analysis(samples::Vector{Float64})
     # Split real vector into real and imaginary components
