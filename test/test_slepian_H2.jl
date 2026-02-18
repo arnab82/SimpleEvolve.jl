@@ -14,7 +14,7 @@ using Interpolations
 # User / device parameters
 # -------------------------
 @testset "Slepian Optimization Pipeline" begin
-    T = 10.0
+    T = 15.0
     println("T=", T)
     Cost_ham = npzread("h215.npy") 
     n_qubits = round(Int, log2(size(Cost_ham, 1)))
@@ -55,7 +55,6 @@ using Interpolations
     seed_box_errors    = Dict{Tuple{Float64,Float64,Int64}, Vector{Float64}}()
     seed_box_gradients = Dict{Tuple{Float64,Float64,Int64}, Vector{Float64}}()
     penalty = true
-    seed = parse(Int, ARGS[2])
     fs=1.0
     B = 0.4
     seed= 12
@@ -175,19 +174,19 @@ using Interpolations
     COST_THRESHOLD = 1e4
     function safe_cost(x)
         val = costfunction_coeffs(x)
-        if !isfinite(val) || val > COST_THRESHOLD
-            println("Exiting: cost too large ($val)")
-            return Inf
-        end
+        # if !isfinite(val) || val > COST_THRESHOLD
+        #     println("Exiting: cost too large ($val)")
+        #     return Inf
+        # end
         return val
     end
     function safe_gradient!(g, x)
         val = costfunction_coeffs(x)
-        if !isfinite(val) || val > COST_THRESHOLD
-            println("Exiting in gradient: cost too large ($val)")
-            fill!(g, Inf)
-            return Inf
-        end
+        # if !isfinite(val) || val > COST_THRESHOLD
+        #     println("Exiting in gradient: cost too large ($val)")
+        #     fill!(g, Inf)
+        #     return Inf
+        # end
         gradient_coeffs!(g, x)
     end
 
@@ -205,24 +204,24 @@ using Interpolations
     optimization = Optim.optimize(safe_cost, safe_gradient!, coeffs_initial, optimizer, options)
     coeffs_final0 = Optim.minimizer(optimization)
 
-    val0 = costfunction_coeffs(coeffs_final0)
-    if !isfinite(val0) || val0 > COST_THRESHOLD
-        println("Initial cost too large ($val0). Skipping...")
-        continue
-    else
+    # val0 = costfunction_coeffs(coeffs_final0)
+    # if !isfinite(val0) || val0 > COST_THRESHOLD
+    #     println("Initial cost too large ($val0). Skipping...")
+    #     continue
+    # else
         tol_ode = 1e-8
         optimization = Optim.optimize(safe_cost, safe_gradient!, coeffs_final0, optimizer, options)
         coeffs_final1 = Optim.minimizer(optimization)
-    end
+    # end
 
-    val1 = costfunction_coeffs(coeffs_final1)
-    if !isfinite(val1) || val1 > COST_THRESHOLD
-        println("Initial cost too large ($val1). Skipping...")
-        continue
-    else
+    # val1 = costfunction_coeffs(coeffs_final1)
+    # if !isfinite(val1) || val1 > COST_THRESHOLD
+    #     println("Initial cost too large ($val1). Skipping...")
+    #     continue
+    # else
         tol_ode = 1e-10
         optimization = Optim.optimize(safe_cost, safe_gradient!, coeffs_final1, optimizer, options)
-    end
+    # end
     coeffs_final2 = Optim.minimizer(optimization)
 
     optimization = Optim.optimize(safe_cost, safe_gradient!, coeffs_final2, optimizer, options)
@@ -235,12 +234,10 @@ using Interpolations
     println("Final energy: ", final_energy)
     println("Final gradient norm: ", norm(final_gradient))
     println("Final gap to actual: ", final_energy - real(E_actual))
-    @testset "Energy checks" begin
     @info "Final energy ($final_energy) should be less than Hartree–Fock energy ($energy_hf)"
     @test final_energy < energy_hf
     
     @info "Final energy should be close to actual ground state energy (gap = $(final_energy - real(E_actual)))"
     @test abs(final_energy - real(E_actual)) < 1e-5
-    end
     
 end
