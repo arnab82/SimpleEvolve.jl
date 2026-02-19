@@ -14,7 +14,7 @@ using Interpolations
 # User / device parameters
 # -------------------------
 @testset "Slepian Optimization Pipeline" begin
-    T = 15.0
+    T = 20.0
     println("T=", T)
     Cost_ham = npzread("h215.npy") 
     n_qubits = round(Int, log2(size(Cost_ham, 1)))
