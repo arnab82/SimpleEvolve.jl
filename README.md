@@ -145,7 +145,6 @@ The optimizer sees the Slepian coefficients, while `SimpleEvolve` evolves the
 corresponding digitized pulses. A typical cost wrapper is:
 
 ```julia
-
 function costfunction_coeffs(coeffs)
     samples_complex = SimpleEvolve.coeffs_to_samples_matrix(coeffs, Φ, K, n_qubits)
     signals = MultiChannelSignal([
@@ -178,6 +177,72 @@ grad_real = Φ' * ∂Ω_real
 grad_imag = Φ' * ∂Ω_imag
 grad = vcat(vec(grad_real), vec(grad_imag))
 ```
+
+For optimization, pass the scalar cost and an in-place gradient function to
+`Optim.jl`. The Slepian example uses limited-memory BFGS with a More-Thuente
+line search; for smaller parameter vectors, `Optim.BFGS` can be used instead.
+
+```julia
+using Optim
+using LineSearches
+
+tol_ode = 1e-6
+
+function gradient_coeffs!(G, coeffs)
+    samples_complex = SimpleEvolve.coeffs_to_samples_matrix(coeffs, Φ, K, n_qubits)
+    signals = MultiChannelSignal([
+        DigitizedSignal(samples_complex[:, q], dt, carrier_freqs[q])
+        for q in 1:n_qubits
+    ])
+
+    ∂Ω_real, ∂Ω_imag, ψT, σT = gradientsignal_ODE(
+        ψ_initial, T, signals, n_qubits, drives, eigvalues, eigvectors,
+        Cost_ham, n_samples;
+        basis="qubitbasis",
+        tol_ode=tol_ode,
+    )
+
+    grad_real = Φ' * ∂Ω_real
+    grad_imag = Φ' * ∂Ω_imag
+    G .= vcat(vec(grad_real), vec(grad_imag))
+    return G
+end
+
+function safe_cost(coeffs)
+    value = costfunction_coeffs(coeffs)
+    return isfinite(value) ? value : Inf
+end
+
+function safe_gradient!(G, coeffs)
+    gradient_coeffs!(G, coeffs)
+    return G
+end
+
+linesearch = LineSearches.MoreThuente()
+optimizer = Optim.LBFGS(linesearch=linesearch)
+# For smaller coefficient vectors, use:
+# optimizer = Optim.BFGS(linesearch=linesearch)
+
+options = Optim.Options(
+    show_trace = true,
+    show_every = 1,
+    f_reltol = 1e-15,
+    g_tol = 1e-6,
+    iterations = 1000,
+)
+
+optimization = Optim.optimize(
+    safe_cost,
+    safe_gradient!,
+    coeffs_initial,
+    optimizer,
+    options,
+)
+coeffs_final = Optim.minimizer(optimization)
+```
+
+The LiH verification notebook also warm-restarts the optimizer while tightening
+the ODE tolerance, for example `tol_ode = 1e-6`, then `1e-8`, then `1e-10`.
 
 This gives an efficient optimization loop: one forward and one backward ODE
 solve compute the full pulse gradient, independent of the number of pulse

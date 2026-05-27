@@ -166,19 +166,20 @@ function kron_concat(
     return O_[end]
 end
 """
-    coeffs_to_samples_matrix(coeffs::Vector{Float64}, Φ::Matrix{Float64}, n_qubits::Int) -> Matrix{ComplexF64}
+    coeffs_to_samples_matrix(coeffs::Vector{Float64}, Φ::Matrix{Float64}, K::Int, n_qubits::Int) -> Matrix{ComplexF64}
 Converts a vector of coefficients representing the real and imaginary parts of quantum states into a matrix of complex samples.
 
 # Arguments
 - `coeffs::Vector{Float64}`: A vector of coefficients representing the real and imaginary parts of quantum states.
 - `Φ::Matrix{Float64}`: The measurement matrix.
+- `K::Int`: The number of Slepian/DPSS basis functions per channel.
 - `n_qubits::Int`: The number of qubits.
 
 
 # Returns
 - `Matrix{ComplexF64}`: A matrix of complex samples.
 """
-function coeffs_to_samples_matrix(coeffs::Vector{Float64}, Φ::Matrix{Float64},K::Int, n_qubits::Int)
+function coeffs_to_samples_matrix(coeffs::Vector{Float64}, Φ::Matrix{Float64}, K::Int, n_qubits::Int)
     nK = K * n_qubits
     real_flat = coeffs[1:nK]
     imag_flat = coeffs[nK+1:end]
