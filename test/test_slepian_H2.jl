@@ -174,19 +174,19 @@ using Interpolations
     COST_THRESHOLD = 1e4
     function safe_cost(x)
         val = costfunction_coeffs(x)
-        # if !isfinite(val) || val > COST_THRESHOLD
-        #     println("Exiting: cost too large ($val)")
-        #     return Inf
-        # end
+        if !isfinite(val) || val > COST_THRESHOLD
+            println("Exiting: cost too large ($val)")
+            return Inf
+        end
         return val
     end
     function safe_gradient!(g, x)
         val = costfunction_coeffs(x)
-        # if !isfinite(val) || val > COST_THRESHOLD
-        #     println("Exiting in gradient: cost too large ($val)")
-        #     fill!(g, Inf)
-        #     return Inf
-        # end
+        if !isfinite(val) || val > COST_THRESHOLD
+            println("Exiting in gradient: cost too large ($val)")
+            fill!(g, Inf)
+            return Inf
+        end
         gradient_coeffs!(g, x)
     end
 

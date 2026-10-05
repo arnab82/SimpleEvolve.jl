@@ -5,5 +5,6 @@ using Test
 include("./test_slepian_H2.jl")
 include("./Lih_15.jl")
 include("./test_H2_excited.jl")
+include("./test_gradient_adjoint.jl")
 end
 

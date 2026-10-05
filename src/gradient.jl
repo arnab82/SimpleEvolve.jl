@@ -65,7 +65,7 @@ function gradientsignal_ODE(ψ0::Vector{ComplexF64},
     prob_ = ODEProblem(dψdt!, σ, (T,0.0), parameters)
     sol_  = solve(prob_,RK4(), abstol=tol_ode, reltol=tol_ode,save_everystep=false,maxiters=1e8)
     σ .= sol_.u[end]
-    σ .= σ /norm(σ)
+    # costate sigma(t) = U(t,T) C|psi(T)> must NOT be normalized: ||C psi(T)|| is part of the gradient
 
     # Calculating gradient by evolving both ψ and σ states
     for i ∈ 1:n_signals
@@ -73,7 +73,7 @@ function gradientsignal_ODE(ψ0::Vector{ComplexF64},
         t_f = t_[i]+δt
         
         gradient_eachtimestep!(∂Ω_real, ∂Ω_imag, ψ, σ, signals, n_sites, 
-                              drives, eigvalues, t_i, i, τ)
+                              drives, eigvalues, t_i, i, i == 1 ? τ/2 : τ)   # end sample: half-width hat
         parameters = [signals, n_sites, drives, eigvalues,false]
         
         # Evolve ψ forward
@@ -89,7 +89,7 @@ function gradientsignal_ODE(ψ0::Vector{ComplexF64},
     
     # Final gradient calculation
     gradient_eachtimestep!(∂Ω_real, ∂Ω_imag, ψ, σ, signals, n_sites,
-                          drives, eigvalues, t_[end], n_signals+1, τ)
+                          drives, eigvalues, t_[end], n_signals+1, τ/2)   # end sample: half-width hat
     
     # Normalize and transform back if needed
     σ .= σ /norm(σ)
@@ -164,14 +164,14 @@ function gradientsignal_ODE_real(ψ0::Vector{ComplexF64},
     prob_ = ODEProblem(dψdt!, σ, (T,0.0), parameters)
     sol_  = solve(prob_,RK4(), abstol=tol_ode, reltol=tol_ode,save_everystep=false,maxiters=1e8)
     σ .= sol_.u[end]
-    σ .= σ /norm(σ)
+    # costate sigma(t) = U(t,T) C|psi(T)> must NOT be normalized: ||C psi(T)|| is part of the gradient
 
     # Calculating gradient by evolving both ψ and σ states
     for i ∈ 1:n_signals
         t_i = t_[i]
         t_f = t_[i]+δt
         gradient_eachtimestep_real!(∂Ω, ψ, σ, signals, n_sites, 
-                              drives, eigvalues, t_i, i, τ)
+                              drives, eigvalues, t_i, i, i == 1 ? τ/2 : τ)   # end sample: half-width hat
         parameters = [signals, n_sites, drives, eigvalues,false]
         
         # Evolve ψ forward
@@ -187,7 +187,7 @@ function gradientsignal_ODE_real(ψ0::Vector{ComplexF64},
     
     # Final gradient calculation
     gradient_eachtimestep_real!(∂Ω, ψ, σ, signals, n_sites,
-                          drives, eigvalues, t_[end], n_signals+1, τ)
+                          drives, eigvalues, t_[end], n_signals+1, τ/2)   # end sample: half-width hat
     
     # Normalize and transform back if needed
     σ .= σ /norm(σ)
@@ -345,7 +345,7 @@ function gradientsignal_direct_exponentiation(ψ0::Vector{ComplexF64},
     for i in reverse(1:n_trotter_steps+1)
         σ .= single_trotter_exponentiation_step(σ,signals, n_sites, drives, eigvalues, dt,t_series[i],true)
     end
-    σ .= σ /norm(σ)
+    # costate sigma(t) = U(t,T) C|psi(T)> must NOT be normalized: ||C psi(T)|| is part of the gradient
     #calculating gradient by evolving both ψ and σ states
     for i in 1:n_signals+1
         gradient_eachtimestep_real!(∂Ω,ψ,σ,signals,n_sites,drives,eigvalues,t_[i],i,τ)
@@ -498,7 +498,7 @@ function gradientsignal_rotate(ψ0::Vector{ComplexF64},
         transform!(σ, V_evolve', tmp_σ)
     end
     σ .= single_step(σ, t_series[1], Δt/2, signals, n_sites, a_q, tmp_σ, tmpM_, tmpK_,true)
-    σ .= σ /norm(σ)
+    # costate sigma(t) = U(t,T) C|psi(T)> must NOT be normalized: ||C psi(T)|| is part of the gradient
 
     #calculating gradient by evolving both ψ and σ states
     gradient_eachstep!(∂Ω, 1, σ, ψ, t_[1],δt/2 , signals,
@@ -843,11 +843,7 @@ function gradientsignal_ODE_real_multiple_states(
     prob_rev = ODEProblem(dψdt_multiple_states!, Σ, (T,0.0), parameters)
     sol_rev = solve(prob_rev, RK4(), abstol=tol_ode, reltol=tol_ode, save_everystep=false, maxiters=1e8)
     Σ .= sol_rev.u[end]
-    
-    # Normalize each state
-    for i in 1:n_states
-        Σ[:,i] ./= norm(Σ[:,i])
-    end
+    # costates U(t,T) C|psi_i(T)> must NOT be normalized: their norms are part of the gradient
 
     # Gradient calculation loop
     for i ∈ 1:n_signals
@@ -855,7 +851,7 @@ function gradientsignal_ODE_real_multiple_states(
         t_f = t_i + δt
         
         gradient_eachtimestep_real_multiple_states!(∂Ω, Ψ, Σ, signals, n_sites, 
-                                       drives, eigvalues, t_i, i, τ)
+                                       drives, eigvalues, t_i, i, i == 1 ? τ/2 : τ)   # end sample: half-width hat
         
         # Evolve Ψ forward (use matrix-capable version)
         prob_ψ = ODEProblem(dψdt_multiple_states!, Ψ, (t_i,t_f), parameters)
@@ -870,7 +866,7 @@ function gradientsignal_ODE_real_multiple_states(
     
     # Final step gradient calculation
     gradient_eachtimestep_real_multiple_states!(∂Ω, Ψ, Σ, signals, n_sites,
-                                   drives, eigvalues, t_[end], n_signals+1, τ)
+                                   drives, eigvalues, t_[end], n_signals+1, τ/2)   # end sample: half-width hat
 
     # Normalize and transform back if needed
     for i in 1:n_states
@@ -943,11 +939,7 @@ function gradientsignal_ODE_multiple_states(
     prob_rev = ODEProblem(dψdt_multiple_states!, Σ, (T,0.0), parameters)
     sol_rev = solve(prob_rev, RK4(), abstol=tol_ode, reltol=tol_ode, save_everystep=false, maxiters=1e8)
     Σ .= sol_rev.u[end]
-    
-    # Normalize each state
-    for i in 1:n_states
-        Σ[:,i] ./= norm(Σ[:,i])
-    end
+    # costates U(t,T) C|psi_i(T)> must NOT be normalized: their norms are part of the gradient
 
     # Gradient calculation loop
     for i ∈ 1:n_signals
@@ -955,7 +947,7 @@ function gradientsignal_ODE_multiple_states(
         t_f = t_i + δt
         
         gradient_eachtimestep_multiple_states!(∂Ω_real,∂Ω_imag, Ψ, Σ, signals, n_sites, 
-                                       drives, eigvalues, t_i, i, τ)
+                                       drives, eigvalues, t_i, i, i == 1 ? τ/2 : τ)   # end sample: half-width hat
         
         # Evolve Ψ forward (use matrix-capable version)
         prob_ψ = ODEProblem(dψdt_multiple_states!, Ψ, (t_i,t_f), parameters)
@@ -970,7 +962,7 @@ function gradientsignal_ODE_multiple_states(
     
     # Final step gradient calculation
     gradient_eachtimestep_multiple_states!(∂Ω_real,∂Ω_imag, Ψ, Σ, signals, n_sites, 
-                                       drives, eigvalues, t_[end], n_signals+1, τ)
+                                       drives, eigvalues, t_[end], n_signals+1, τ/2)   # end sample: half-width hat
         
     # Normalize and transform back if needed
     for i in 1:n_states
